@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  gatekeeper-console-frontend:
+    image: ghcr.io/jmazzahacks/gatekeeper-console-frontend:latest
+    # Or build locally:
+    # build:
+    #   context: .
+    #   args:
+    #     - CR_PAT=${CR_PAT}
+    #     - NEXT_PUBLIC_AEGIS_API_URL=${NEXT_PUBLIC_AEGIS_API_URL}
+    #     - NEXT_PUBLIC_SITE_DOMAIN=${NEXT_PUBLIC_SITE_DOMAIN}
+    ports:
+      - "3000:3000"
+    environment:
+      - DEBUG_LOCAL=false
+      - LOKI_URL=${LOKI_URL}
+      - LOKI_USER=${LOKI_USER}
+      - LOKI_PASS=${LOKI_PASS}
+      # - LOKI_CA_PATH=/app/ca.pem
+    restart: unless-stopped

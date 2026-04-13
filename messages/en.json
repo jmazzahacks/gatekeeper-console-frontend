@@ -1,0 +1,112 @@
+{
+  "Common": {
+    "loading": "Loading...",
+    "logout": "Logout",
+    "error": "Error",
+    "success": "Success",
+    "brandName": "Gatekeeper Console",
+    "back": "Back",
+    "backToHome": "Back to Home",
+    "secureAuthentication": "Secure authentication",
+    "secureVerification": "Secure verification",
+    "readyToCreate": "Welcome aboard"
+  },
+  "Home": {
+    "title": "Gatekeeper Console",
+    "subtitle": "API Gateway Management",
+    "description": "Manage API authentication, client credentials, route permissions, and access control from a single dashboard.",
+    "feature1Title": "Client Management",
+    "feature1Description": "Create and manage API clients with API key or HMAC authentication credentials. Control client lifecycle with active, suspended, and revoked states.",
+    "feature2Title": "Route Protection",
+    "feature2Description": "Define which API endpoints require authentication and configure method-level access control with domain-based routing rules.",
+    "feature3Title": "Permission Control",
+    "feature3Description": "Grant fine-grained permissions linking clients to specific routes and HTTP methods. Monitor usage with rate limiting and audit logs.",
+    "footerTagline": "Open source API gateway management."
+  },
+  "Welcome": {
+    "title": "Welcome to Gatekeeper Console",
+    "subtitle": "Your account has been created successfully.",
+    "description": "You can now sign in to access the platform."
+  },
+  "Login": {
+    "title": "Sign In",
+    "emailLabel": "Email Address",
+    "emailPlaceholder": "you@example.com",
+    "passwordLabel": "Password",
+    "passwordPlaceholder": "Enter your password",
+    "signInButton": "Sign In",
+    "signingIn": "Signing in...",
+    "accessGranted": "Access granted. Redirecting...",
+    "authenticationFailed": "Authentication failed",
+    "accessDenied": "Access Denied",
+    "noSiteSpecified": "No site specified. Please use ?site=your-domain",
+    "siteNotFound": "Site not found",
+    "initializingConnection": "Initializing connection...",
+    "forgotPassword": "Forgot password?"
+  },
+  "Verify": {
+    "title": "Verify Your Email",
+    "titleSetPassword": "Set Your Password",
+    "subtitle": "Complete your account setup",
+    "verifying": "Verifying...",
+    "checkingToken": "Checking verification link...",
+    "passwordLabel": "Password",
+    "passwordPlaceholder": "Create a password",
+    "confirmPasswordLabel": "Confirm Password",
+    "confirmPasswordPlaceholder": "Confirm your password",
+    "passwordsDoNotMatch": "Passwords do not match",
+    "verifyButton": "Verify Email",
+    "setPasswordButton": "Set Password & Verify",
+    "verificationSuccess": "Email verified successfully",
+    "redirectingToLogin": "Redirecting to login...",
+    "invalidToken": "Invalid or expired verification link",
+    "verificationFailed": "Verification failed",
+    "backToLogin": "Back to Login"
+  },
+  "ForgotPassword": {
+    "title": "Reset Password",
+    "subtitle": "Enter your email to receive a reset link",
+    "emailLabel": "Email Address",
+    "emailPlaceholder": "you@example.com",
+    "sendResetLink": "Send Reset Link",
+    "sending": "Sending...",
+    "successTitle": "Check Your Email",
+    "successMessage": "If an account exists with that email, you will receive a password reset link.",
+    "backToLogin": "Back to Login",
+    "requestFailed": "Unable to process request"
+  },
+  "ResetPassword": {
+    "title": "Set New Password",
+    "subtitle": "Create a new password for your account",
+    "passwordLabel": "New Password",
+    "passwordPlaceholder": "Enter new password",
+    "confirmPasswordLabel": "Confirm Password",
+    "confirmPasswordPlaceholder": "Confirm new password",
+    "passwordsDoNotMatch": "Passwords do not match",
+    "resetButton": "Reset Password",
+    "resetting": "Resetting...",
+    "successTitle": "Password Reset",
+    "successMessage": "Your password has been reset successfully.",
+    "redirectingToLogin": "Redirecting to login...",
+    "invalidToken": "Invalid or expired reset link",
+    "resetFailed": "Password reset failed",
+    "backToLogin": "Back to Login"
+  },
+  "ConfirmEmailChange": {
+    "title": "Confirming Email Change",
+    "processing": "Processing your request...",
+    "successTitle": "Email Updated",
+    "successMessage": "Your email address has been changed successfully.",
+    "redirectingHome": "Redirecting to home...",
+    "invalidToken": "Invalid or expired confirmation link",
+    "confirmFailed": "Email change confirmation failed",
+    "backToHome": "Back to Home"
+  },
+  "Dashboard": {
+    "title": "Dashboard",
+    "subtitle": "Welcome to your dashboard",
+    "goToDashboard": "Go to Dashboard",
+    "emptyStateTitle": "Coming Soon",
+    "emptyStateMessage": "Your dashboard is being built. Check back soon for API management features."
+  }
+}
