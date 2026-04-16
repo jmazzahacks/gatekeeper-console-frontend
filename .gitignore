@@ -35,3 +35,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Version file (used by build system, not tracked)
+VERSION
+
+# Build script (contains baked-in deployment config, not tracked)
+build-publish.sh

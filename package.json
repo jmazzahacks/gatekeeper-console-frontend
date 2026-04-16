@@ -9,7 +9,7 @@
     "lint": "next lint"
   },
   "author": "Jason Byteforge <jmazzahacks@users.noreply.github.com>",
-  "license": "SEE LICENSE IN LICENSE",
+  "license": "SEE LICENSE IN LICENSE FILE (O'Saasy)",
   "dependencies": {
     "@tailwindcss/postcss": "^4.1.17",
     "byteforge-aegis-client-js": "git+https://github.com/jmazzahacks/byteforge-aegis-client-js.git",
