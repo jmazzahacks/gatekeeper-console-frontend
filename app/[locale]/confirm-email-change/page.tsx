@@ -5,8 +5,20 @@ import { useTranslations } from 'next-intl';
 import { useRouter, Link } from '@/i18n/navigation';
 import { useSearchParams } from 'next/navigation';
 import { getAuthClient } from '@/lib/browserClient';
+import ConsoleFrame from '@/components/ConsoleFrame';
 
 type ConfirmEmailStatus = 'loading' | 'success' | 'error';
+
+function FallbackLoader({ label }: { label: string }) {
+  return (
+    <ConsoleFrame>
+      <div className="flex items-center justify-center gap-3 py-12">
+        <div className="spinner" />
+        <span className="text-mono-xs">{label}</span>
+      </div>
+    </ConsoleFrame>
+  );
+}
 
 function ConfirmEmailChangeContent() {
   const router = useRouter();
@@ -32,10 +44,7 @@ function ConfirmEmailChangeContent() {
       if (result.success && result.data) {
         setStatus('success');
         setMessage(t('successMessage'));
-
-        setTimeout(() => {
-          router.push('/');
-        }, 2000);
+        setTimeout(() => router.push('/'), 1500);
       } else if (!result.success) {
         setStatus('error');
         setMessage(result.error || t('confirmFailed'));
@@ -45,100 +54,57 @@ function ConfirmEmailChangeContent() {
     confirmEmail();
   }, [token, t, router]);
 
-  // Loading state
   if (status === 'loading') {
     return (
-      <main className="min-h-screen mesh-gradient paper-texture flex items-center justify-center p-6">
-        <div className="relative z-10 w-full max-w-md">
-          <div className="card p-8 animate-scale-in">
-            <div className="text-center">
-              <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-[var(--amber-glow)]/10 flex items-center justify-center">
-                <div className="spinner border-[var(--amber-glow)] border-t-transparent w-8 h-8" />
-              </div>
-
-              <h2 className="font-display text-2xl font-bold mb-3">
-                {t('title')}
-              </h2>
-              <p className="text-[var(--foreground-muted)]">{t('processing')}</p>
-            </div>
+      <ConsoleFrame crumb="auth › email-change">
+        <div className="card p-7 animate-scale-in">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="spinner" />
+            <h1 className="font-display text-base">{t('title')}</h1>
           </div>
+          <p className="text-[var(--ink-dim)] text-sm">{t('processing')}</p>
         </div>
-      </main>
+      </ConsoleFrame>
     );
   }
 
-  // Error state
   if (status === 'error') {
     return (
-      <main className="min-h-screen mesh-gradient paper-texture flex items-center justify-center p-6">
-        <div className="relative z-10 w-full max-w-md">
-          <div className="card p-8 animate-scale-in">
-            <div className="text-center">
-              <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-[var(--error-red)]/10 flex items-center justify-center">
-                <svg className="w-8 h-8 text-[var(--error-red)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                </svg>
-              </div>
-
-              <h2 className="font-display text-2xl font-bold mb-3 text-[var(--error-red)]">
-                {t('confirmFailed')}
-              </h2>
-              <p className="text-[var(--foreground-muted)] mb-6">{message}</p>
-
-              <Link href="/" className="btn-secondary inline-flex">
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                </svg>
-                {t('backToHome')}
-              </Link>
-            </div>
+      <ConsoleFrame crumb="auth › email-change › error">
+        <div className="card p-7 animate-scale-in">
+          <div className="flex items-center gap-2 mb-4">
+            <span className="status-dot err" aria-hidden />
+            <h1 className="font-display text-[var(--err)] text-base">{t('confirmFailed')}</h1>
           </div>
+          <p className="text-[var(--ink-dim)] text-sm mb-6">{message}</p>
+          <Link href="/" className="btn-secondary inline-flex">
+            ← {t('backToHome')}
+          </Link>
         </div>
-      </main>
+      </ConsoleFrame>
     );
   }
 
-  // Success state
   return (
-    <main className="min-h-screen mesh-gradient paper-texture flex items-center justify-center p-6">
-      <div className="relative z-10 w-full max-w-md">
-        <div className="card p-8 animate-scale-in">
-          <div className="text-center">
-            <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-[var(--success-green)]/10 flex items-center justify-center">
-              <svg className="w-8 h-8 text-[var(--success-green)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-              </svg>
-            </div>
-
-            <h2 className="font-display text-2xl font-bold mb-3 text-[var(--success-green)]">
-              {t('successTitle')}
-            </h2>
-            <p className="text-[var(--foreground-muted)]">{t('redirectingHome')}</p>
-
-            <div className="mt-4 flex justify-center">
-              <div className="spinner border-[var(--amber-glow)] border-t-transparent" />
-            </div>
-          </div>
+    <ConsoleFrame crumb="auth › email-change › ok">
+      <div className="card p-7 animate-scale-in">
+        <div className="flex items-center gap-2 mb-3">
+          <span className="status-dot ok" aria-hidden />
+          <h1 className="font-display text-[var(--ok)] text-base">{t('successTitle')}</h1>
         </div>
+        <p className="text-[var(--ink-dim)] text-sm flex items-center gap-2">
+          <span className="spinner" />
+          {t('redirectingHome')}
+        </p>
       </div>
-    </main>
+    </ConsoleFrame>
   );
 }
 
 export default function ConfirmEmailChangePage() {
   const t = useTranslations('Common');
-
   return (
-    <Suspense fallback={
-      <main className="min-h-screen mesh-gradient paper-texture flex items-center justify-center p-6">
-        <div className="relative z-10 text-center animate-fade-in">
-          <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-[var(--amber-glow)]/10 flex items-center justify-center">
-            <div className="spinner border-[var(--amber-glow)] border-t-transparent" />
-          </div>
-          <p className="text-[var(--foreground-muted)] font-medium">{t('loading')}</p>
-        </div>
-      </main>
-    }>
+    <Suspense fallback={<FallbackLoader label={t('loading')} />}>
       <ConfirmEmailChangeContent />
     </Suspense>
   );

@@ -1,142 +1,98 @@
-/* ============================================================
-   Google Fonts — must precede @import "tailwindcss"
-   ============================================================ */
-@import url('https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap');
+/* Google Fonts — must precede @import "tailwindcss" */
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 
 @import "tailwindcss";
 
-/* ============================================================
-   CSS Custom Properties - Light Mode (Default)
-   ============================================================ */
+/* ==================================================================
+   Dark ops-console palette — single mode (internal tool, no light mode)
+   ================================================================== */
 :root {
-  /* Ink palette - warm dark tones */
-  --ink-deepest: #1a1612;
-  --ink-deep: #2d2822;
-  --ink-medium: #4a4238;
-  --ink-light: #6b5f52;
-  --ink-muted: #8a7e70;
+  color-scheme: dark;
 
-  /* Paper palette - warm light tones */
-  --paper-cream: #f4efe6;
-  --paper-warm: #ede7db;
-  --paper-cool: #f8f5ef;
+  /* Surfaces */
+  --bg: #0a0d0c;
+  --surface-0: #11161a;
+  --surface-1: #1a2128;
+  --surface-2: #232b33;
 
-  /* Amber accent palette */
-  --amber-glow: #c8956c;
-  --amber-bright: #d4a574;
-  --amber-deep: #b8845c;
+  /* Rules */
+  --hairline: #222a31;
+  --rule: #2e3841;
+  --rule-strong: #44515e;
 
-  /* Status colors */
-  --success-green: #4a7c59;
-  --error-red: #c75050;
+  /* Text */
+  --ink: #dce1e6;
+  --ink-dim: #9aa2ab;
+  --ink-faint: #5f6973;
+  --ink-disabled: #3b434b;
 
-  /* Semantic mappings */
-  --foreground: var(--ink-deepest);
-  --foreground-secondary: var(--ink-medium);
-  --foreground-muted: var(--ink-muted);
-  --background: var(--paper-cream);
-  --background-secondary: var(--paper-warm);
+  /* Amber signal — single warm accent */
+  --amber: #f0b878;
+  --amber-bright: #f7c88e;
+  --amber-dim: #b88a55;
+  --amber-tint: rgba(240, 184, 120, 0.14);
 
-  /* Component tokens */
-  --card-bg: #ffffff;
-  --card-border: #e8e0d4;
-  --input-background: #faf8f4;
-  --input-border: #d4cdc2;
-  --input-focus-ring: rgba(200, 149, 108, 0.3);
-  --border: #e0d8cc;
+  /* Status */
+  --ok: #6ee7b7;
+  --warn: #fbbf24;
+  --err: #f87171;
 
-  /* Shadows */
-  --shadow-sm: 0 1px 2px rgba(26, 22, 18, 0.04);
-  --shadow-md: 0 4px 12px rgba(26, 22, 18, 0.06);
-  --shadow-lg: 0 8px 24px rgba(26, 22, 18, 0.08);
-  --shadow-hover: 0 8px 24px rgba(26, 22, 18, 0.1);
+  /* Semantic aliases (keep existing components visually coherent) */
+  --foreground: var(--ink);
+  --foreground-secondary: var(--ink-dim);
+  --foreground-muted: var(--ink-faint);
+  --background: var(--bg);
+  --background-secondary: var(--surface-0);
+  --border: var(--rule);
+  --card-bg: var(--surface-0);
+  --card-border: var(--hairline);
+  --input-background: var(--surface-1);
+  --input-border: var(--rule);
+  --input-focus-ring: rgba(240, 184, 120, 0.2);
+  --amber-glow: var(--amber);
+  --amber-deep: var(--amber-dim);
+  --success-green: var(--ok);
+  --error-red: var(--err);
 }
 
-/* ============================================================
-   Dark Mode Overrides
-   ============================================================ */
-@media (prefers-color-scheme: dark) {
-  :root {
-    /* Ink palette inverted for dark mode */
-    --ink-deepest: #f0ebe4;
-    --ink-deep: #d8d0c6;
-    --ink-medium: #b0a696;
-    --ink-light: #8a7e70;
-    --ink-muted: #6b5f52;
-
-    /* Paper palette - dark warm tones */
-    --paper-cream: #1a1612;
-    --paper-warm: #221e19;
-    --paper-cool: #2a2520;
-
-    /* Amber accent palette - slightly brighter for dark backgrounds */
-    --amber-glow: #d4a574;
-    --amber-bright: #e0b688;
-    --amber-deep: #c8956c;
-
-    /* Status colors - adjusted for dark backgrounds */
-    --success-green: #5a9c6e;
-    --error-red: #e06060;
-
-    /* Semantic mappings */
-    --foreground: var(--ink-deepest);
-    --foreground-secondary: var(--ink-medium);
-    --foreground-muted: var(--ink-muted);
-    --background: var(--paper-cream);
-    --background-secondary: var(--paper-warm);
-
-    /* Component tokens */
-    --card-bg: #221e19;
-    --card-border: #3a342c;
-    --input-background: #2a2520;
-    --input-border: #4a4238;
-    --input-focus-ring: rgba(212, 165, 116, 0.3);
-    --border: #3a342c;
-
-    /* Shadows - more prominent on dark backgrounds */
-    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.3);
-    --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.4);
-    --shadow-hover: 0 8px 24px rgba(0, 0, 0, 0.5);
-  }
-}
-
-/* ============================================================
-   Base Styles
-   ============================================================ */
+/* ==================================================================
+   Base
+   ================================================================== */
 body {
-  font-family: 'DM Sans', system-ui, -apple-system, sans-serif;
-  color: var(--foreground);
-  background-color: var(--background);
+  font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace;
+  font-size: 0.875rem;
+  line-height: 1.55;
+  color: var(--ink);
+  background-color: var(--bg);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
 .font-display {
-  font-family: 'Libre Baskerville', 'Georgia', serif;
+  font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace;
+  font-weight: 700;
+  letter-spacing: -0.015em;
 }
 
-/* ============================================================
-   Paper Texture Overlay
-   Uses an inline SVG with fractal noise for a subtle
-   paper-like grain effect across the entire page.
-   ============================================================ */
+/* ==================================================================
+   Ambient textures — CRT scanlines + warm vignette
+   ================================================================== */
 body::before {
   content: '';
   position: fixed;
   inset: 0;
   z-index: 9999;
   pointer-events: none;
-  opacity: 0.03;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
-  background-repeat: repeat;
+  opacity: 0.6;
+  background-image: repeating-linear-gradient(
+    0deg,
+    transparent 0px,
+    transparent 2px,
+    rgba(255, 255, 255, 0.012) 2px,
+    rgba(255, 255, 255, 0.012) 3px
+  );
 }
 
-/* ============================================================
-   Mesh Gradient Background
-   Layered radial gradients that create a soft, warm
-   ambient glow behind the page content.
-   ============================================================ */
 body::after {
   content: '';
   position: fixed;
@@ -144,326 +100,261 @@ body::after {
   z-index: -1;
   pointer-events: none;
   background:
-    radial-gradient(ellipse 80% 60% at 10% 20%, rgba(200, 149, 108, 0.06) 0%, transparent 60%),
-    radial-gradient(ellipse 60% 80% at 90% 80%, rgba(200, 149, 108, 0.04) 0%, transparent 60%),
-    radial-gradient(ellipse 50% 50% at 50% 50%, rgba(244, 239, 230, 0.5) 0%, transparent 80%);
+    radial-gradient(ellipse 100% 70% at 50% -10%, rgba(240, 184, 120, 0.05) 0%, transparent 60%),
+    radial-gradient(ellipse 100% 80% at 50% 110%, rgba(0, 0, 0, 0.5) 0%, transparent 60%);
 }
 
-@media (prefers-color-scheme: dark) {
-  body::before {
-    opacity: 0.02;
-  }
+/* Legacy markup helpers (existing code uses these class names; treat as no-ops) */
+.mesh-gradient, .paper-texture { }
 
-  body::after {
-    background:
-      radial-gradient(ellipse 80% 60% at 10% 20%, rgba(200, 149, 108, 0.03) 0%, transparent 60%),
-      radial-gradient(ellipse 60% 80% at 90% 80%, rgba(200, 149, 108, 0.02) 0%, transparent 60%),
-      radial-gradient(ellipse 50% 50% at 50% 50%, rgba(26, 22, 18, 0.5) 0%, transparent 80%);
-  }
+/* ==================================================================
+   Typography helpers
+   ================================================================== */
+.text-mono-xs {
+  font-size: 0.6875rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
 }
 
-/* ============================================================
-   Animation Keyframes
-   ============================================================ */
+.brand-word {
+  font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: lowercase;
+}
+
+/* ==================================================================
+   Animations — restrained
+   ================================================================== */
 @keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(16px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 @keyframes scaleIn {
-  from {
-    opacity: 0;
-    transform: scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
+  from { opacity: 0; transform: scale(0.995); }
+  to { opacity: 1; transform: scale(1); }
 }
 
-@keyframes shimmer {
-  0% {
-    background-position: -200% 0;
-  }
-  100% {
-    background-position: 200% 0;
-  }
+@keyframes blink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
 }
 
-@keyframes spark {
-  0%, 100% {
-    opacity: 0;
-    transform: scale(0.8);
-  }
-  50% {
-    opacity: 1;
-    transform: scale(1);
-  }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Legacy keyframes kept as no-ops so any lingering references don't break */
+@keyframes pulse-ring { to { opacity: 0; } }
+@keyframes shimmer { to { background-position: 200% 0; } }
+@keyframes spark { to { opacity: 0; } }
+
+.animate-fade-in-up { animation: fadeInUp 0.35s ease-out both; }
+.animate-fade-in { animation: fadeIn 0.25s ease-out both; }
+.animate-scale-in { animation: scaleIn 0.25s ease-out both; }
+
+.delay-100 { animation-delay: 50ms; }
+.delay-200 { animation-delay: 100ms; }
+.delay-300 { animation-delay: 150ms; }
+.delay-400 { animation-delay: 200ms; }
+.delay-500 { animation-delay: 250ms; }
+.delay-600 { animation-delay: 300ms; }
+
+.caret::after {
+  content: '▋';
+  color: var(--amber);
+  margin-left: 0.25rem;
+  animation: blink 1.1s steps(1) infinite;
 }
 
-@keyframes pulse-ring {
-  0% {
-    transform: scale(1);
-    opacity: 0.4;
-  }
-  100% {
-    transform: scale(1.5);
-    opacity: 0;
-  }
-}
-
-/* ============================================================
-   Animation Utilities
-   ============================================================ */
-.animate-fade-in-up {
-  animation: fadeInUp 0.6s ease-out both;
-}
-
-.animate-fade-in {
-  animation: fadeIn 0.5s ease-out both;
-}
-
-.animate-scale-in {
-  animation: scaleIn 0.5s ease-out both;
-}
-
-.animate-shimmer {
-  animation: shimmer 2s linear infinite;
-}
-
-.animate-spark {
-  animation: spark 2s ease-in-out infinite;
-}
-
-.animate-pulse-ring {
-  animation: pulse-ring 1.5s ease-out infinite;
-}
-
-/* Delay utility classes for staggered animations */
-.delay-100 {
-  animation-delay: 100ms;
-}
-
-.delay-200 {
-  animation-delay: 200ms;
-}
-
-.delay-300 {
-  animation-delay: 300ms;
-}
-
-.delay-400 {
-  animation-delay: 400ms;
-}
-
-.delay-500 {
-  animation-delay: 500ms;
-}
-
-.delay-600 {
-  animation-delay: 600ms;
-}
-
-/* ============================================================
-   Component: Card
-   White card with subtle border, shadow, rounded corners,
-   and a gentle lift effect on hover.
-   ============================================================ */
+/* ==================================================================
+   Panel / Card — hairline borders, no shadow
+   ================================================================== */
 .card {
-  background: var(--card-bg);
-  border: 1px solid var(--card-border);
-  border-radius: 0.75rem;
-  box-shadow: var(--shadow-md);
-  transition: box-shadow 0.3s ease, transform 0.3s ease;
+  background: var(--surface-0);
+  border: 1px solid var(--hairline);
+  border-radius: 2px;
+  box-shadow: none;
+  transition: border-color 0.2s ease;
 }
 
-.card:hover {
-  box-shadow: var(--shadow-hover);
-  transform: translateY(-2px);
-}
+.card:hover { border-color: var(--rule); }
 
-/* ============================================================
-   Component: Input Field
-   Full-width input with warm background, smooth focus
-   transition, and amber glow on focus.
-   ============================================================ */
+/* ==================================================================
+   Inputs
+   ================================================================== */
 .input-field {
   width: 100%;
-  padding: 0.75rem 1rem;
-  background: var(--input-background);
-  border: 1px solid var(--input-border);
-  border-radius: 0.5rem;
-  color: var(--foreground);
-  font-family: 'DM Sans', system-ui, sans-serif;
-  font-size: 0.95rem;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  padding: 0.625rem 0.875rem;
+  background: var(--surface-1);
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  color: var(--ink);
+  font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace;
+  font-size: 0.875rem;
+  line-height: 1.3;
   outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
 }
 
-.input-field::placeholder {
-  color: var(--foreground-muted);
-}
+.input-field::placeholder { color: var(--ink-disabled); }
 
 .input-field:focus {
-  border-color: var(--amber-glow);
-  box-shadow: 0 0 0 3px var(--input-focus-ring);
+  border-color: var(--amber);
+  background: var(--surface-2);
+  box-shadow: 0 0 0 2px var(--input-focus-ring);
 }
 
-/* ============================================================
-   Component: Primary Button
-   Gradient amber button with icon support, lift on hover,
-   and a disabled state that reduces opacity.
-   ============================================================ */
+.input-field:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Keep Chromium autofill from flashing a SaaS blue over the dark shell */
+.input-field:-webkit-autofill,
+.input-field:-webkit-autofill:hover,
+.input-field:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 1000px var(--surface-1) inset !important;
+  -webkit-text-fill-color: var(--ink) !important;
+  caret-color: var(--ink);
+  transition: background-color 0s 9999s;
+}
+
+/* ==================================================================
+   Buttons
+   ================================================================== */
 .btn-primary {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  padding: 0.75rem 1.5rem;
-  background: linear-gradient(135deg, var(--amber-glow), var(--amber-deep));
-  color: #ffffff;
-  font-family: 'DM Sans', system-ui, sans-serif;
-  font-weight: 600;
-  font-size: 0.95rem;
-  border: none;
-  border-radius: 0.5rem;
+  padding: 0.625rem 1.25rem;
+  background: var(--amber);
+  color: var(--bg);
+  font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace;
+  font-weight: 700;
+  font-size: 0.8125rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border: 1px solid var(--amber);
+  border-radius: 2px;
   cursor: pointer;
-  box-shadow: var(--shadow-sm);
-  transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+  transition: background-color 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
 }
 
 .btn-primary:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-md);
+  background: var(--amber-bright);
+  border-color: var(--amber-bright);
 }
 
-.btn-primary:active:not(:disabled) {
-  transform: translateY(0);
-  box-shadow: var(--shadow-sm);
-}
+.btn-primary:active:not(:disabled) { opacity: 0.85; }
+.btn-primary:disabled { opacity: 0.45; cursor: not-allowed; }
+.btn-primary svg, .btn-primary .icon { width: 0.9375rem; height: 0.9375rem; flex-shrink: 0; }
 
-.btn-primary:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.btn-primary svg,
-.btn-primary .icon {
-  width: 1.125rem;
-  height: 1.125rem;
-  flex-shrink: 0;
-}
-
-/* ============================================================
-   Component: Secondary Button
-   Transparent button with border, amber text highlight
-   on hover.
-   ============================================================ */
 .btn-secondary {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  padding: 0.75rem 1.5rem;
+  padding: 0.625rem 1.25rem;
   background: transparent;
-  color: var(--foreground);
-  font-family: 'DM Sans', system-ui, sans-serif;
+  color: var(--ink-dim);
+  font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace;
   font-weight: 500;
-  font-size: 0.95rem;
-  border: 1px solid var(--border);
-  border-radius: 0.5rem;
+  font-size: 0.8125rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border: 1px solid var(--rule);
+  border-radius: 2px;
   cursor: pointer;
-  transition: border-color 0.2s ease, color 0.2s ease, background-color 0.2s ease;
+  transition: border-color 0.15s ease, color 0.15s ease;
 }
 
-.btn-secondary:hover {
-  border-color: var(--amber-glow);
-  color: var(--amber-deep);
-  background-color: rgba(200, 149, 108, 0.05);
-}
+.btn-secondary:hover { border-color: var(--amber); color: var(--amber); }
+.btn-secondary:active { color: var(--amber-dim); }
+.btn-secondary svg, .btn-secondary .icon { width: 0.9375rem; height: 0.9375rem; flex-shrink: 0; }
 
-.btn-secondary:active {
-  background-color: rgba(200, 149, 108, 0.1);
-}
-
-.btn-secondary svg,
-.btn-secondary .icon {
-  width: 1.125rem;
-  height: 1.125rem;
-  flex-shrink: 0;
-}
-
-/* ============================================================
-   Component: Spinner
-   Rotating border circle for loading states.
-   ============================================================ */
+/* ==================================================================
+   Spinner
+   ================================================================== */
 .spinner {
-  width: 1.5rem;
-  height: 1.5rem;
-  border: 2px solid var(--border);
-  border-top-color: var(--amber-glow);
+  width: 1rem;
+  height: 1rem;
+  border: 1px solid var(--rule);
+  border-top-color: var(--amber);
   border-radius: 50%;
   animation: spin 0.7s linear infinite;
 }
 
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-/* ============================================================
-   Component: Status Feedback Bars
-   Colored horizontal bars for success and error states.
-   ============================================================ */
+/* ==================================================================
+   Status feedback — bordered, not filled
+   ================================================================== */
 .status-success {
-  background-color: var(--success-green);
-  color: #ffffff;
-  padding: 0.75rem 1rem;
-  border-radius: 0.5rem;
-  font-size: 0.9rem;
+  background: rgba(110, 231, 183, 0.08);
+  border: 1px solid rgba(110, 231, 183, 0.3);
+  color: var(--ok);
+  padding: 0.5rem 0.75rem;
+  border-radius: 2px;
+  font-size: 0.8125rem;
   font-weight: 500;
 }
 
 .status-error {
-  background-color: var(--error-red);
-  color: #ffffff;
-  padding: 0.75rem 1rem;
-  border-radius: 0.5rem;
-  font-size: 0.9rem;
+  background: rgba(248, 113, 113, 0.08);
+  border: 1px solid rgba(248, 113, 113, 0.3);
+  color: var(--err);
+  padding: 0.5rem 0.75rem;
+  border-radius: 2px;
+  font-size: 0.8125rem;
   font-weight: 500;
 }
 
-/* ============================================================
-   Component: Decorative Line
-   Centered amber gradient horizontal rule for visual
-   separation between content sections.
-   ============================================================ */
-.decorative-line {
-  width: 6rem;
-  height: 2px;
-  margin: 1.5rem auto;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    var(--amber-glow),
-    transparent
-  );
-  border: none;
-  border-radius: 1px;
+/* ==================================================================
+   Status dot
+   ================================================================== */
+.status-dot {
+  display: inline-block;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--ok);
+  box-shadow: 0 0 6px currentColor;
+  vertical-align: middle;
 }
+.status-dot.ok { background: var(--ok); color: var(--ok); }
+.status-dot.warn { background: var(--warn); color: var(--warn); }
+.status-dot.err { background: var(--err); color: var(--err); }
+.status-dot.dim { background: var(--ink-faint); box-shadow: none; }
+
+/* ==================================================================
+   Decorative rules / hairlines
+   ================================================================== */
+.decorative-line {
+  width: 100%;
+  max-width: 3rem;
+  height: 1px;
+  margin: 0.75rem auto;
+  background: var(--rule-strong);
+  border: none;
+}
+
+.hairline {
+  height: 1px;
+  background: var(--hairline);
+  border: none;
+}
+
+/* ==================================================================
+   Scrollbars (Chromium)
+   ================================================================== */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--rule); border: 2px solid var(--bg); border-radius: 0; }
+::-webkit-scrollbar-thumb:hover { background: var(--rule-strong); }
+
+/* ==================================================================
+   Selection
+   ================================================================== */
+::selection { background: var(--amber-tint); color: var(--ink); }
