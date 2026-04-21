@@ -11,6 +11,7 @@
   "author": "Jason Byteforge <jmazzahacks@users.noreply.github.com>",
   "license": "SEE LICENSE IN LICENSE FILE (O'Saasy)",
   "dependencies": {
+    "@jmazzahacks/api-gatekeeper-api": "github:jmazzahacks/api-gatekeeper-api-js",
     "@tailwindcss/postcss": "^4.1.17",
     "byteforge-aegis-client-js": "git+https://github.com/jmazzahacks/byteforge-aegis-client-js.git",
     "byteforge-loki-logging-ts": "github:jmazzahacks/byteforge-loki-logging-ts",
