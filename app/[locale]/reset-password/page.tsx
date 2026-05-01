@@ -4,7 +4,7 @@ import { Suspense, useState, FormEvent } from 'react';
 import { useTranslations } from 'next-intl';
 import { useRouter, Link } from '@/i18n/navigation';
 import { useSearchParams } from 'next/navigation';
-import { getAuthClient } from '@/lib/browserClient';
+import { getProxyClient } from '@/lib/browserClient';
 import ConsoleFrame from '@/components/ConsoleFrame';
 
 type ResetPasswordStatus = 'idle' | 'loading' | 'success' | 'error';
@@ -62,7 +62,7 @@ function ResetPasswordContent() {
     setStatus('loading');
     setMessage(t('resetting'));
 
-    const client = getAuthClient();
+    const client = getProxyClient();
     const result = await client.resetPassword(token, password);
 
     if (result.success && result.data) {

@@ -1,27 +1,48 @@
 /**
- * Browser-side auth client using byteforge-aegis-client-js directly.
- * Uses a singleton AuthClient that persists tokens in memory and syncs to localStorage.
+ * Browser-side auth clients using byteforge-aegis-client-js.
+ *
+ * Two singleton clients exist in the browser:
+ *
+ * - getAuthClient() — points at Aegis directly (NEXT_PUBLIC_AEGIS_API_URL).
+ *   Used for bearer-gated calls: refresh, me, logout, confirm-email-change.
+ *   These don't require X-Tenant-Api-Key.
+ *
+ * - getProxyClient() — points at the gatekeeper backend (NEXT_PUBLIC_GATEKEEPER_API_URL).
+ *   Used for the six tenant-key-gated public auth calls: register, login,
+ *   verify-email, check-verification-token, request-password-reset,
+ *   reset-password. The backend attaches the tenant key server-side.
  */
 
 import { AuthClient } from 'byteforge-aegis-client-js';
 import type { LoginResponse, RefreshTokenResponse, ApiResponse } from 'byteforge-aegis-client-js';
 
 const AEGIS_API_URL = process.env.NEXT_PUBLIC_AEGIS_API_URL || 'https://aegis.example.com';
+const GATEKEEPER_API_URL = process.env.NEXT_PUBLIC_GATEKEEPER_API_URL ?? '';
+const SITE_NAME = process.env.NEXT_PUBLIC_SITE_NAME || 'gatekeeper';
 const SITE_DOMAIN = process.env.NEXT_PUBLIC_SITE_DOMAIN || 'gatekeeper.example.com';
 
-let singleton: AuthClient | null = null;
+// Aegis genuinely requires site_id in every gated request body — it's the
+// lookup key the @require_tenant_api_key middleware uses to find which
+// tenant key to HMAC-compare against the X-Tenant-Api-Key header.
+//
+// However, our proxy backend (docker-backend's /api/auth/* routes) drops
+// any body-supplied site_id and substitutes its own server-side AEGIS_SITE_ID
+// before calling Aegis. So the value the browser sends is overwritten before
+// it reaches Aegis, and any non-zero placeholder satisfies the JS client's
+// required-arg check without affecting the actual lookup.
+const PROXY_SITE_ID_STUB = 1;
+
+let authSingleton: AuthClient | null = null;
+let proxySingleton: AuthClient | null = null;
 
 export function getAuthClient(): AuthClient {
-  if (singleton) {
-    return singleton;
+  if (authSingleton) {
+    return authSingleton;
   }
 
-  const siteIdStr = typeof window !== 'undefined' ? localStorage.getItem('site_id') : null;
-  const siteId = siteIdStr ? parseInt(siteIdStr, 10) : undefined;
-
-  singleton = new AuthClient({
+  authSingleton = new AuthClient({
     apiUrl: AEGIS_API_URL,
-    siteId,
+    siteId: PROXY_SITE_ID_STUB,
     autoRefresh: false,
   });
 
@@ -30,34 +51,42 @@ export function getAuthClient(): AuthClient {
     const refreshToken = localStorage.getItem('refresh_token');
 
     if (authToken) {
-      singleton.setAuthToken(authToken);
+      authSingleton.setAuthToken(authToken);
     }
     if (refreshToken) {
-      singleton.setRefreshToken(refreshToken);
+      authSingleton.setRefreshToken(refreshToken);
     }
   }
 
-  return singleton;
+  return authSingleton;
 }
 
-export function getAuthClientForSite(siteId: number): AuthClient {
-  return new AuthClient({ apiUrl: AEGIS_API_URL, siteId, autoRefresh: false });
+export function getProxyClient(): AuthClient {
+  if (proxySingleton) {
+    return proxySingleton;
+  }
+
+  proxySingleton = new AuthClient({
+    apiUrl: GATEKEEPER_API_URL,
+    siteId: PROXY_SITE_ID_STUB,
+    autoRefresh: false,
+  });
+
+  return proxySingleton;
 }
 
-export function initAuthClientFromLogin(loginResponse: LoginResponse, siteId: number, siteName: string): void {
+export function initAuthClientFromLogin(loginResponse: LoginResponse): void {
   localStorage.setItem('auth_token', loginResponse.auth_token.token);
   localStorage.setItem('refresh_token', loginResponse.refresh_token.token);
   localStorage.setItem('token_expires_at', loginResponse.auth_token.expires_at.toString());
   localStorage.setItem('user_id', loginResponse.auth_token.user_id.toString());
-  localStorage.setItem('site_id', siteId.toString());
-  localStorage.setItem('site_name', siteName);
 
-  singleton = new AuthClient({
+  authSingleton = new AuthClient({
     apiUrl: AEGIS_API_URL,
-    siteId,
+    siteId: PROXY_SITE_ID_STUB,
     autoRefresh: false,
   });
-  singleton.setTokensFromLoginResponse(loginResponse);
+  authSingleton.setTokensFromLoginResponse(loginResponse);
 }
 
 interface RefreshResult {
@@ -99,17 +128,23 @@ export function isTokenExpired(bufferSeconds: number = 300): boolean {
 }
 
 export function clearAuthClient(): void {
-  if (singleton) {
-    singleton.clearAllTokens();
+  if (authSingleton) {
+    authSingleton.clearAllTokens();
   }
-  singleton = null;
+  authSingleton = null;
+  proxySingleton = null;
 
   localStorage.removeItem('auth_token');
   localStorage.removeItem('refresh_token');
   localStorage.removeItem('token_expires_at');
   localStorage.removeItem('user_id');
+  // Stale keys from the older dynamic-site-lookup version of this app.
   localStorage.removeItem('site_id');
   localStorage.removeItem('site_name');
+}
+
+export function getSiteName(): string {
+  return SITE_NAME;
 }
 
 export function getSiteDomain(): string {

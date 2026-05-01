@@ -4,7 +4,7 @@ import { Suspense, useEffect, useState, FormEvent } from 'react';
 import { useTranslations } from 'next-intl';
 import { useRouter, Link } from '@/i18n/navigation';
 import { useSearchParams } from 'next/navigation';
-import { getAuthClient } from '@/lib/browserClient';
+import { getProxyClient } from '@/lib/browserClient';
 import ConsoleFrame from '@/components/ConsoleFrame';
 
 type VerifyStatus = 'checking' | 'idle' | 'loading' | 'success' | 'error';
@@ -48,7 +48,7 @@ function VerifyContent() {
     }
 
     const checkToken = async () => {
-      const client = getAuthClient();
+      const client = getProxyClient();
       const result = await client.checkVerificationToken(token);
 
       if (result.success && result.data) {
@@ -80,7 +80,7 @@ function VerifyContent() {
     setStatus('loading');
     setMessage(t('verifying'));
 
-    const client = getAuthClient();
+    const client = getProxyClient();
     const passwordToSend = tokenInfo?.passwordRequired ? password : undefined;
     const result = await client.verifyEmail(token, passwordToSend);
 

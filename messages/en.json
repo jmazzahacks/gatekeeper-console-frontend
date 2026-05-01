@@ -9,6 +9,7 @@
     "backToHome": "back to root",
     "sessionLabel": "session",
     "verifyLabel": "verify",
+    "resetLabel": "reset",
     "readyLabel": "ready"
   },
   "Welcome": {
@@ -26,10 +27,6 @@
     "signingIn": "signing in",
     "accessGranted": "ok — redirecting",
     "authenticationFailed": "authentication failed",
-    "accessDenied": "access denied",
-    "noSiteSpecified": "no site specified. use ?site=your-domain",
-    "siteNotFound": "site not found",
-    "initializingConnection": "connecting",
     "forgotPassword": "forgot password"
   },
   "Verify": {
