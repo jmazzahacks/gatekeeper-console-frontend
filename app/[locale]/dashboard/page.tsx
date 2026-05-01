@@ -10,7 +10,7 @@ type Tile = {
 };
 
 const TILES: Tile[] = [
-  { key: 'clients', href: null },
+  { key: 'clients', href: '/dashboard/clients' },
   { key: 'routes', href: '/dashboard/routes' },
   { key: 'permissions', href: null },
   { key: 'rate-limits', href: null },
