@@ -167,6 +167,13 @@ Skip this section if your nginx vhost only serves the gatekeeper frontend + back
 
 Without this, every cross-origin call sends an `OPTIONS` preflight, gatekeeper checks `OPTIONS` against the route's allowed-methods list, finds it isn't configured, and denies — symptom is a generic browser CORS error.
 
+The split of responsibilities is:
+
+| Concern | Where it lives | Why |
+|---|---|---|
+| Origin allowlist enforcement | gatekeeper backend (`CORS_ALLOWED_ORIGINS` env) | One place to manage cross-origin policy across all protected services. |
+| `Access-Control-*` response headers on OPTIONS / actual responses | The protected upstream service (Flask-CORS, fastapi-cors, koa/cors, etc.) | nginx can't relay gatekeeper-built headers cleanly because of phase ordering — see the trap section. |
+
 ### One-time backend setup
 
 Set `CORS_ALLOWED_ORIGINS` in the gatekeeper-backend env (comma-separated, no trailing slash):
@@ -175,7 +182,11 @@ Set `CORS_ALLOWED_ORIGINS` in the gatekeeper-backend env (comma-separated, no tr
 CORS_ALLOWED_ORIGINS=https://app.example.com,http://localhost:3000
 ```
 
-Once set, gatekeeper short-circuits OPTIONS preflights for matching routes and returns the standard `Access-Control-*` headers from `/authz`. The consumer's nginx still has to relay those headers — that's the rest of this section.
+Once set, gatekeeper inspects the `X-Original-Origin` header on every `/authz` call and:
+- If the origin is on the allowlist, returns 200 — nginx forwards the original request (including OPTIONS) to the upstream.
+- If the origin isn't on the allowlist, returns 403 — nginx denies, browser's preflight fails, request never leaves the browser.
+
+The upstream service is then responsible for emitting `Access-Control-*` response headers on both the OPTIONS preflight reply and the actual request that follows. Flask-CORS / equivalent middleware handles this in two lines.
 
 ### vhost on the protected service
 
@@ -201,49 +212,18 @@ server {
         proxy_set_header X-Original-Method $request_method;
         proxy_set_header X-Original-Host   $host;
 
-        # Required for CORS: forward Origin + the two preflight metadata headers.
-        # Gatekeeper reads these to decide whether the origin is allowlisted and
-        # what to put in Access-Control-Allow-Headers / Allow-Methods.
-        proxy_set_header X-Original-Origin               $http_origin;
-        proxy_set_header X-Original-User-Agent           $http_user_agent;
-        proxy_set_header Access-Control-Request-Method   $http_access_control_request_method;
-        proxy_set_header Access-Control-Request-Headers  $http_access_control_request_headers;
+        # Required for CORS: forward Origin so gatekeeper can check it against
+        # CORS_ALLOWED_ORIGINS. Without this, every cross-origin OPTIONS will
+        # be denied with reason=cors_origin_not_allowed (origin field empty).
+        proxy_set_header X-Original-Origin     $http_origin;
+        proxy_set_header X-Original-User-Agent $http_user_agent;
     }
 
     location /api/ {
         auth_request /authz_subrequest;
 
-        # Pull CORS headers off the subrequest response so we can re-emit them
-        # to the browser. `auth_request_set` only fires when the subrequest
-        # returns 2xx — that's fine: gatekeeper returns 200 for both allowed
-        # actual requests and allowed preflights.
-        auth_request_set $cors_origin   $upstream_http_access_control_allow_origin;
-        auth_request_set $cors_methods  $upstream_http_access_control_allow_methods;
-        auth_request_set $cors_headers  $upstream_http_access_control_allow_headers;
-        auth_request_set $cors_max_age  $upstream_http_access_control_max_age;
-
-        # Short-circuit OPTIONS preflights. Gatekeeper has already validated the
-        # Origin and built the response headers; we just need to reply 204 with
-        # them. Without this `if` block, nginx would forward OPTIONS to the
-        # upstream API, which usually returns 405 Method Not Allowed.
-        if ($request_method = OPTIONS) {
-            add_header Access-Control-Allow-Origin  $cors_origin;
-            add_header Access-Control-Allow-Methods $cors_methods;
-            add_header Access-Control-Allow-Headers $cors_headers;
-            add_header Access-Control-Max-Age       $cors_max_age;
-            add_header Vary                         "Origin";
-            add_header Content-Length               0;
-            add_header Content-Type                 "text/plain charset=UTF-8";
-            return 204;
-        }
-
-        # Stamp the actual-request CORS headers. `always` is required: nginx
-        # otherwise drops add_header on 4xx, and the browser would silently
-        # discard the body of authz denials.
-        add_header Access-Control-Allow-Origin $cors_origin always;
-        add_header Vary                        "Origin"     always;
-
-        # Your upstream API ...
+        # Normal upstream proxy. The upstream is responsible for replying to
+        # OPTIONS with 200/204 + Access-Control-* headers (Flask-CORS etc.).
         proxy_pass http://your-upstream:8080;
         proxy_set_header Host $host;
         # ... etc
@@ -251,24 +231,63 @@ server {
 }
 ```
 
+That's it on the nginx side — no `auth_request_set`, no `if ($request_method = OPTIONS)`, no `add_header` stanza. The architectural reason is below.
+
+### Upstream-side CORS
+
+Whatever framework the protected service uses, install its CORS middleware and set the allowed origins to the same list as `CORS_ALLOWED_ORIGINS`. For Flask:
+
+```python
+from flask_cors import CORS
+
+CORS(app, resources={
+    r"/api/*": {"origins": ["https://app.example.com", "http://localhost:3000"]}
+})
+```
+
+The redundancy (origin list lives in both gatekeeper env and upstream code) is intentional: gatekeeper enforces it as policy at the gateway, and the upstream emits the response headers the browser expects. The upstream's list can be a superset — gatekeeper rejects anything not on its own allowlist before the upstream is reached.
+
+### Why no `auth_request_set` + `if/return 204` here
+
+Earlier drafts of this doc told you to capture gatekeeper's CORS response headers into nginx variables via `auth_request_set` and short-circuit OPTIONS with `if ($request_method = OPTIONS) { return 204; }`. **That doesn't work.** nginx processes a request in fixed phases:
+
+```
+... → REWRITE phase ────► ACCESS phase ────► CONTENT phase
+         ↑                    ↑
+         └─ if/return         └─ auth_request fires here
+            fires here
+```
+
+When the `if` matches, `return 204` short-circuits in the rewrite phase, before `auth_request` runs in the access phase. `auth_request_set` therefore never gets populated — every captured variable is empty, and `add_header Access-Control-Allow-Origin $cors_origin` emits an empty value (which the browser drops the response body for). There are workarounds involving `error_page` chains to a named location, but they're brittle across nginx versions and don't compose well with other directives.
+
+The clean answer is: **don't try to relay the headers through nginx**. Have the upstream emit them directly, and use gatekeeper purely for the Origin allowlist enforcement at the auth subrequest level. That's what the architecture above does.
+
 ### Consumer-side traps
 
-1. **`if ($request_method = OPTIONS)` must come BEFORE `proxy_pass`.** nginx evaluates `if` blocks then continues to the `proxy_pass` only if no `return` fired. Forgetting the `return 204` causes the OPTIONS to also hit the upstream, which usually 405s.
-2. **`always` on `add_header` for actual responses is required.** Without it, the headers vanish on 4xx/5xx and the browser drops the body of denials — making "rate limit exceeded" or "no permission" invisible to the calling app.
-3. **Origin must be on the gatekeeper's allowlist.** If it isn't, gatekeeper returns 403 from `/authz` and nginx denies the original request before the OPTIONS short-circuit gets a chance to run. Add the origin to `CORS_ALLOWED_ORIGINS` in the backend env.
-4. **Don't add a separate `add_header Access-Control-Allow-Origin '*'` here.** The `*` wildcard fights with credentialed requests (browsers reject `*` when `withCredentials: true`); echoing the actual allowlisted origin avoids the conflict.
+1. **Origin must be on gatekeeper's allowlist.** If it isn't, `/authz` returns 403 and nginx denies the preflight. Loki entry: `reason: cors_origin_not_allowed`. Fix: add the origin to `CORS_ALLOWED_ORIGINS` in the backend env and restart gatekeeper.
+2. **The upstream must respond to OPTIONS.** If you forget the CORS middleware, OPTIONS will pass authz (gatekeeper returns 200) but the upstream returns 405 Method Not Allowed. Loki entry shows `CORS preflight allowed` but the browser still fails — check the upstream, not gatekeeper.
+3. **Don't use `add_header Access-Control-Allow-Origin '*'` on the upstream.** The `*` wildcard is incompatible with credentialed requests (browsers reject it when `withCredentials: true`). Echo the specific allowlisted origin instead — every CORS middleware does this when configured with an allowlist.
+4. **`X-Original-Origin` is the header name gatekeeper reads.** nginx's auth_request strips the browser's `Origin` header from the subrequest unless you forward it explicitly. Don't rename it to anything else.
 
 ### Smoke test from anywhere on the public internet
 
 ```bash
-# Should be HTTP/2 204 with all four Access-Control-* headers + Vary: Origin
+# Allowed origin -> upstream emits Access-Control-* headers
 curl -i -X OPTIONS https://api.example.com/api/some-protected-route \
   -H "Origin: https://app.example.com" \
   -H "Access-Control-Request-Method: POST" \
   -H "Access-Control-Request-Headers: Content-Type, Authorization"
+# Expect: HTTP/2 200 (or 204) with access-control-allow-origin: https://app.example.com,
+# access-control-allow-methods, access-control-allow-headers, vary: Origin
+
+# Disallowed origin -> gatekeeper rejects, nginx returns 403
+curl -i -X OPTIONS https://api.example.com/api/some-protected-route \
+  -H "Origin: https://evil.example.com" \
+  -H "Access-Control-Request-Method: POST"
+# Expect: HTTP/2 403 (nginx default), no Access-Control-* headers
 ```
 
-A 403 means gatekeeper rejected the origin (check `CORS_ALLOWED_ORIGINS`). A 405 means the OPTIONS short-circuit didn't fire (check the `if` block + `auth_request_set` directives).
+Cross-check gatekeeper's Loki for `CORS preflight allowed` (allowed origin) and `CORS preflight denied` with `reason: cors_origin_not_allowed` (disallowed origin) — both should fire for the two curls above.
 
 ## Apply
 
