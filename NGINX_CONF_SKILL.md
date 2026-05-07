@@ -161,6 +161,115 @@ If you're not sure whether you need `/authz`, leave it out. After applying, run 
 
 4. **The variable-form `proxy_pass` (trap 3) requires a `resolver` directive.** See the "Required: a `resolver` directive must exist" section above. Without one, request-time DNS lookup fails and you get `502 Bad Gateway`. The required directive lives once in the http block, not per-location.
 
+## CORS for services protected by gatekeeper `/authz`
+
+Skip this section if your nginx vhost only serves the gatekeeper frontend + backend (the drop-in vhost above). It applies when **another** service on **another** vhost uses `auth_request /authz_subrequest;` to delegate authorization to gatekeeper, and that service is called by a browser cross-origin (typical: a tenant frontend on `https://app.example.com` calling APIs on `https://api.example.com`).
+
+Without this, every cross-origin call sends an `OPTIONS` preflight, gatekeeper checks `OPTIONS` against the route's allowed-methods list, finds it isn't configured, and denies — symptom is a generic browser CORS error.
+
+### One-time backend setup
+
+Set `CORS_ALLOWED_ORIGINS` in the gatekeeper-backend env (comma-separated, no trailing slash):
+
+```
+CORS_ALLOWED_ORIGINS=https://app.example.com,http://localhost:3000
+```
+
+Once set, gatekeeper short-circuits OPTIONS preflights for matching routes and returns the standard `Access-Control-*` headers from `/authz`. The consumer's nginx still has to relay those headers — that's the rest of this section.
+
+### vhost on the protected service
+
+```nginx
+server {
+    listen 443 ssl;
+    server_name api.example.com;
+
+    # ssl_certificate / ssl_certificate_key as usual ...
+
+    # Internal subrequest target. Adjust hostname/port to wherever gatekeeper
+    # listens (often a docker service name on a shared user network).
+    location = /authz_subrequest {
+        internal;
+        set $gk_backend gatekeeper-backend;
+        proxy_pass http://$gk_backend:7843/authz;
+        proxy_pass_request_body off;
+        proxy_set_header Content-Length "";
+
+        # Required: gatekeeper authorizes against the original request, not the
+        # subrequest's own URI/method.
+        proxy_set_header X-Original-URI    $request_uri;
+        proxy_set_header X-Original-Method $request_method;
+        proxy_set_header X-Original-Host   $host;
+
+        # Required for CORS: forward Origin + the two preflight metadata headers.
+        # Gatekeeper reads these to decide whether the origin is allowlisted and
+        # what to put in Access-Control-Allow-Headers / Allow-Methods.
+        proxy_set_header X-Original-Origin               $http_origin;
+        proxy_set_header X-Original-User-Agent           $http_user_agent;
+        proxy_set_header Access-Control-Request-Method   $http_access_control_request_method;
+        proxy_set_header Access-Control-Request-Headers  $http_access_control_request_headers;
+    }
+
+    location /api/ {
+        auth_request /authz_subrequest;
+
+        # Pull CORS headers off the subrequest response so we can re-emit them
+        # to the browser. `auth_request_set` only fires when the subrequest
+        # returns 2xx — that's fine: gatekeeper returns 200 for both allowed
+        # actual requests and allowed preflights.
+        auth_request_set $cors_origin   $upstream_http_access_control_allow_origin;
+        auth_request_set $cors_methods  $upstream_http_access_control_allow_methods;
+        auth_request_set $cors_headers  $upstream_http_access_control_allow_headers;
+        auth_request_set $cors_max_age  $upstream_http_access_control_max_age;
+
+        # Short-circuit OPTIONS preflights. Gatekeeper has already validated the
+        # Origin and built the response headers; we just need to reply 204 with
+        # them. Without this `if` block, nginx would forward OPTIONS to the
+        # upstream API, which usually returns 405 Method Not Allowed.
+        if ($request_method = OPTIONS) {
+            add_header Access-Control-Allow-Origin  $cors_origin;
+            add_header Access-Control-Allow-Methods $cors_methods;
+            add_header Access-Control-Allow-Headers $cors_headers;
+            add_header Access-Control-Max-Age       $cors_max_age;
+            add_header Vary                         "Origin";
+            add_header Content-Length               0;
+            add_header Content-Type                 "text/plain charset=UTF-8";
+            return 204;
+        }
+
+        # Stamp the actual-request CORS headers. `always` is required: nginx
+        # otherwise drops add_header on 4xx, and the browser would silently
+        # discard the body of authz denials.
+        add_header Access-Control-Allow-Origin $cors_origin always;
+        add_header Vary                        "Origin"     always;
+
+        # Your upstream API ...
+        proxy_pass http://your-upstream:8080;
+        proxy_set_header Host $host;
+        # ... etc
+    }
+}
+```
+
+### Consumer-side traps
+
+1. **`if ($request_method = OPTIONS)` must come BEFORE `proxy_pass`.** nginx evaluates `if` blocks then continues to the `proxy_pass` only if no `return` fired. Forgetting the `return 204` causes the OPTIONS to also hit the upstream, which usually 405s.
+2. **`always` on `add_header` for actual responses is required.** Without it, the headers vanish on 4xx/5xx and the browser drops the body of denials — making "rate limit exceeded" or "no permission" invisible to the calling app.
+3. **Origin must be on the gatekeeper's allowlist.** If it isn't, gatekeeper returns 403 from `/authz` and nginx denies the original request before the OPTIONS short-circuit gets a chance to run. Add the origin to `CORS_ALLOWED_ORIGINS` in the backend env.
+4. **Don't add a separate `add_header Access-Control-Allow-Origin '*'` here.** The `*` wildcard fights with credentialed requests (browsers reject `*` when `withCredentials: true`); echoing the actual allowlisted origin avoids the conflict.
+
+### Smoke test from anywhere on the public internet
+
+```bash
+# Should be HTTP/2 204 with all four Access-Control-* headers + Vary: Origin
+curl -i -X OPTIONS https://api.example.com/api/some-protected-route \
+  -H "Origin: https://app.example.com" \
+  -H "Access-Control-Request-Method: POST" \
+  -H "Access-Control-Request-Headers: Content-Type, Authorization"
+```
+
+A 403 means gatekeeper rejected the origin (check `CORS_ALLOWED_ORIGINS`). A 405 means the OPTIONS short-circuit didn't fire (check the `if` block + `auth_request_set` directives).
+
 ## Apply
 
 ```bash
