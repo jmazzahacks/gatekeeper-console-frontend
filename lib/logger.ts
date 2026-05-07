@@ -1,12 +1,12 @@
 import { LokiLogger } from 'byteforge-loki-logging-ts';
 
 const DEBUG_LOCAL = process.env.DEBUG_LOCAL === 'true';
-const LOKI_URL = process.env.LOKI_URL;
+const LOKI_ENDPOINT = process.env.LOKI_ENDPOINT;
 const LOKI_USER = process.env.LOKI_USER;
-const LOKI_PASS = process.env.LOKI_PASS;
-const LOKI_CA_PATH = process.env.LOKI_CA_PATH;
+const LOKI_PASSWORD = process.env.LOKI_PASSWORD;
+const LOKI_CA_BUNDLE_PATH = process.env.LOKI_CA_BUNDLE_PATH;
 
-const useLoki = !DEBUG_LOCAL && !!LOKI_URL;
+const useLoki = !DEBUG_LOCAL && !!LOKI_ENDPOINT;
 
 interface LogExtra {
   [key: string]: string;
@@ -54,15 +54,15 @@ function createConsoleLogger(name: string): Logger {
 
 function createLokiLogger(name: string): Logger {
   const transportConfig: { url: string; auth?: { username: string; password: string }; verify?: string | boolean } = {
-    url: LOKI_URL!,
+    url: LOKI_ENDPOINT!,
   };
 
-  if (LOKI_USER && LOKI_PASS) {
-    transportConfig.auth = { username: LOKI_USER, password: LOKI_PASS };
+  if (LOKI_USER && LOKI_PASSWORD) {
+    transportConfig.auth = { username: LOKI_USER, password: LOKI_PASSWORD };
   }
 
-  if (LOKI_CA_PATH) {
-    transportConfig.verify = LOKI_CA_PATH;
+  if (LOKI_CA_BUNDLE_PATH) {
+    transportConfig.verify = LOKI_CA_BUNDLE_PATH;
   }
 
   return new LokiLogger(
@@ -90,5 +90,5 @@ export function createLogger(name: string): Logger {
 
 export const logger = createLogger('gatekeeper-console');
 
-const mode = useLoki ? `loki (${LOKI_URL})` : 'console (DEBUG_LOCAL)';
+const mode = useLoki ? `loki (${LOKI_ENDPOINT})` : 'console (DEBUG_LOCAL)';
 logger.info(`Logger initialized in ${mode} mode`);
