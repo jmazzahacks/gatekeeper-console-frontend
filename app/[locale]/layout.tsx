@@ -2,6 +2,7 @@ import { NextIntlClientProvider } from 'next-intl';
 import { getMessages } from 'next-intl/server';
 import { notFound } from 'next/navigation';
 import { routing } from '@/i18n/routing';
+import RuntimeConfigBootstrap from '@/components/RuntimeConfigBootstrap';
 import '../globals.css';
 
 type Props = {
@@ -26,7 +27,9 @@ export default async function LocaleLayout({ children, params }: Props) {
     <html lang={locale}>
       <body>
         <NextIntlClientProvider messages={messages}>
-          {children}
+          <RuntimeConfigBootstrap>
+            {children}
+          </RuntimeConfigBootstrap>
         </NextIntlClientProvider>
       </body>
     </html>

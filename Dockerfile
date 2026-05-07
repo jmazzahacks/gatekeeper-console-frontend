@@ -20,16 +20,9 @@ RUN npm ci
 FROM node:22-alpine AS builder
 WORKDIR /app
 
-# Build-time arguments — these get baked into the client bundle
-ARG NEXT_PUBLIC_AEGIS_API_URL
-ARG NEXT_PUBLIC_SITE_NAME
-ARG NEXT_PUBLIC_SITE_DOMAIN
-ARG NEXT_PUBLIC_GATEKEEPER_API_URL
-
-ENV NEXT_PUBLIC_AEGIS_API_URL=$NEXT_PUBLIC_AEGIS_API_URL
-ENV NEXT_PUBLIC_SITE_NAME=$NEXT_PUBLIC_SITE_NAME
-ENV NEXT_PUBLIC_SITE_DOMAIN=$NEXT_PUBLIC_SITE_DOMAIN
-ENV NEXT_PUBLIC_GATEKEEPER_API_URL=$NEXT_PUBLIC_GATEKEEPER_API_URL
+# No NEXT_PUBLIC_* build args — runtime URLs and branding are fetched from
+# the backend at first paint via /api/config (see lib/runtimeConfig.ts), so a
+# single image deploys across tenants without a rebuild.
 
 COPY --from=deps /app/node_modules ./node_modules
 

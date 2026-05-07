@@ -3,7 +3,7 @@ import createNextIntlPlugin from 'next-intl/plugin';
 
 const withNextIntl = createNextIntlPlugin('./i18n/request.ts');
 
-// Local-dev proxy target for /api/admin/* and /api/auth/*. Only used when
+// Local-dev proxy target for /api/* (admin, auth, config). Only used when
 // DEV_GATEKEEPER_PROXY is set — lets the dev server avoid CORS preflights
 // against a non-local backend. Production is same-origin behind nginx and
 // ignores this.
@@ -16,12 +16,8 @@ const nextConfig: NextConfig = {
     if (!DEV_GATEKEEPER_PROXY) return [];
     return [
       {
-        source: '/api/admin/:path*',
-        destination: `${DEV_GATEKEEPER_PROXY}/api/admin/:path*`,
-      },
-      {
-        source: '/api/auth/:path*',
-        destination: `${DEV_GATEKEEPER_PROXY}/api/auth/:path*`,
+        source: '/api/:path*',
+        destination: `${DEV_GATEKEEPER_PROXY}/api/:path*`,
       },
     ];
   },

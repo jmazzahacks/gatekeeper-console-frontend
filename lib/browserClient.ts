@@ -3,34 +3,38 @@
  *
  * Two singleton clients exist in the browser:
  *
- * - getAuthClient() — points at Aegis directly (NEXT_PUBLIC_AEGIS_API_URL).
+ * - getAuthClient() — points at Aegis directly (runtime config: aegisApiUrl).
  *   Used for bearer-gated calls: refresh, me, logout, confirm-email-change.
  *   These don't require X-Tenant-Api-Key.
  *
- * - getProxyClient() — points at the gatekeeper backend (NEXT_PUBLIC_GATEKEEPER_API_URL).
+ * - getProxyClient() — points at the gatekeeper backend (same-origin).
  *   Used for the six tenant-key-gated public auth calls: register, login,
  *   verify-email, check-verification-token, request-password-reset,
  *   reset-password. The backend attaches the tenant key server-side.
+ *
+ * URLs are pulled from getRuntimeConfig() which is populated at boot by
+ * RuntimeConfigBootstrap fetching /api/config from the gatekeeper backend.
  */
 
 import { AuthClient } from 'byteforge-aegis-client-js';
 import type { LoginResponse, RefreshTokenResponse, ApiResponse } from 'byteforge-aegis-client-js';
-
-const AEGIS_API_URL = process.env.NEXT_PUBLIC_AEGIS_API_URL || 'https://aegis.example.com';
-const GATEKEEPER_API_URL = process.env.NEXT_PUBLIC_GATEKEEPER_API_URL ?? '';
-const SITE_NAME = process.env.NEXT_PUBLIC_SITE_NAME || 'gatekeeper';
-const SITE_DOMAIN = process.env.NEXT_PUBLIC_SITE_DOMAIN || 'gatekeeper.example.com';
+import { getRuntimeConfig } from './runtimeConfig';
 
 // Aegis genuinely requires site_id in every gated request body — it's the
 // lookup key the @require_tenant_api_key middleware uses to find which
 // tenant key to HMAC-compare against the X-Tenant-Api-Key header.
 //
-// However, our proxy backend (docker-backend's /api/auth/* routes) drops
+// However, our proxy backend (gatekeeper-backend's /api/auth/* routes) drops
 // any body-supplied site_id and substitutes its own server-side AEGIS_SITE_ID
 // before calling Aegis. So the value the browser sends is overwritten before
 // it reaches Aegis, and any non-zero placeholder satisfies the JS client's
 // required-arg check without affecting the actual lookup.
 const PROXY_SITE_ID_STUB = 1;
+
+// Same-origin proxy URL. The gatekeeper backend lives behind the same nginx
+// host as this frontend, so a relative-path AuthClient resolves to the right
+// place without crossing origins.
+const PROXY_API_URL = '';
 
 let authSingleton: AuthClient | null = null;
 let proxySingleton: AuthClient | null = null;
@@ -40,8 +44,9 @@ export function getAuthClient(): AuthClient {
     return authSingleton;
   }
 
+  const { aegisApiUrl } = getRuntimeConfig();
   authSingleton = new AuthClient({
-    apiUrl: AEGIS_API_URL,
+    apiUrl: aegisApiUrl,
     siteId: PROXY_SITE_ID_STUB,
     autoRefresh: false,
   });
@@ -67,7 +72,7 @@ export function getProxyClient(): AuthClient {
   }
 
   proxySingleton = new AuthClient({
-    apiUrl: GATEKEEPER_API_URL,
+    apiUrl: PROXY_API_URL,
     siteId: PROXY_SITE_ID_STUB,
     autoRefresh: false,
   });
@@ -81,8 +86,9 @@ export function initAuthClientFromLogin(loginResponse: LoginResponse): void {
   localStorage.setItem('token_expires_at', loginResponse.auth_token.expires_at.toString());
   localStorage.setItem('user_id', loginResponse.auth_token.user_id.toString());
 
+  const { aegisApiUrl } = getRuntimeConfig();
   authSingleton = new AuthClient({
-    apiUrl: AEGIS_API_URL,
+    apiUrl: aegisApiUrl,
     siteId: PROXY_SITE_ID_STUB,
     autoRefresh: false,
   });
@@ -144,11 +150,11 @@ export function clearAuthClient(): void {
 }
 
 export function getSiteName(): string {
-  return SITE_NAME;
+  return getRuntimeConfig().siteName;
 }
 
 export function getSiteDomain(): string {
-  return SITE_DOMAIN;
+  return getRuntimeConfig().siteDomain;
 }
 
 export { AuthClient };

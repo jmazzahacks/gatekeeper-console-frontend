@@ -10,11 +10,6 @@
 
 import { GatekeeperClient } from '@jmazzahacks/api-gatekeeper-api';
 
-// Required. The underlying client uses `new URL()`, which rejects relative
-// paths, so this must be an absolute URL. Baked in at build time via
-// build-publish.sh; see .env.local for dev.
-const GATEKEEPER_API_URL = process.env.NEXT_PUBLIC_GATEKEEPER_API_URL ?? '';
-
 let singleton: GatekeeperClient | null = null;
 
 export function getGatekeeperClient(): GatekeeperClient {
@@ -24,7 +19,13 @@ export function getGatekeeperClient(): GatekeeperClient {
     return singleton;
   }
 
-  singleton = new GatekeeperClient({ baseUrl: GATEKEEPER_API_URL });
+  // Same-origin: the gatekeeper backend lives behind the same nginx host as
+  // this frontend. The underlying client uses `new URL()` which rejects
+  // relative paths, so we anchor on window.location.origin.
+  if (typeof window === 'undefined') {
+    throw new Error('getGatekeeperClient must be called in the browser');
+  }
+  singleton = new GatekeeperClient({ baseUrl: window.location.origin });
   syncTokenFromStorage(singleton);
   return singleton;
 }
