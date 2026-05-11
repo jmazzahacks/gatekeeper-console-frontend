@@ -13,7 +13,7 @@ const TILES: Tile[] = [
   { key: 'clients', href: '/dashboard/clients' },
   { key: 'routes', href: '/dashboard/routes' },
   { key: 'permissions', href: '/dashboard/permissions' },
-  { key: 'rate-limits', href: null },
+  { key: 'rate-limits', href: '/dashboard/rate-limits' },
 ];
 
 export default function DashboardOverview() {
