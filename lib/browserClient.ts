@@ -27,9 +27,11 @@ import { getRuntimeConfig } from './runtimeConfig';
 // However, our proxy backend (gatekeeper-backend's /api/auth/* routes) drops
 // any body-supplied site_id and substitutes its own server-side AEGIS_SITE_ID
 // before calling Aegis. So the value the browser sends is overwritten before
-// it reaches Aegis, and any non-zero placeholder satisfies the JS client's
-// required-arg check without affecting the actual lookup.
-const PROXY_SITE_ID_STUB = 1;
+// it reaches Aegis, and any well-formed placeholder satisfies the JS client's
+// required-arg check without affecting the actual lookup. Post Aegis phase-3
+// the client types `siteId` as a UUID string, so we hand it the zero-UUID
+// stub (never reaches Aegis; the proxy overrides it upstream).
+const PROXY_SITE_ID_STUB = '00000000-0000-0000-0000-000000000000';
 
 // Same-origin proxy URL. The gatekeeper backend lives behind the same nginx
 // host as this frontend, so a relative-path AuthClient resolves to the right

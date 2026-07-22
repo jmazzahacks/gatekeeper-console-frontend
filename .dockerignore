@@ -1,0 +1,41 @@
+# Never COPY host artifacts into the build context. In particular:
+#
+# - node_modules — the deps stage installs the correct pinned versions
+#   inside the image; if this dir is present on the host it gets copied
+#   over the fresh install by `COPY . .` and the built bundle then ships
+#   whatever the host happened to have. That's how a bumped
+#   package-lock.json can appear to build successfully with npm ci
+#   inside deps stage but the runner ends up bundled against stale
+#   client code from the host. Learned the hard way during the Aegis
+#   phase-3 rollout on 2026-07-22 (v20 through v22 all shipped the
+#   pre-phase-3 JS client despite the lockfile bump).
+#
+# - .next / build outputs — must be produced by the builder stage,
+#   never seeded from the host (turbopack/next caches from a different
+#   node/turbopack version corrupt the build in confusing ways).
+node_modules
+.next
+out
+
+# Local envs — the runtime container reads its config from /api/config
+# and .env-gatekeeper*; the .env.local on the dev host must not ship.
+.env
+.env.local
+.env.*.local
+
+# VCS + editor + OS clutter.
+.git
+.gitignore
+.gitattributes
+.vscode
+.idea
+.DS_Store
+Thumbs.db
+
+# Docs / scripts that don't belong in the runtime image.
+LICENSE
+README.md
+build-publish.sh
+VERSION
+docker-compose.example.yaml
+NGINX_CONF_SKILL.md
