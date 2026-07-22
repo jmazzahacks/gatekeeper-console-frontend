@@ -8,8 +8,8 @@ const REFRESH_CHECK_INTERVAL_MS = 60_000;
 interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
-  userId: string | null;
-  siteId: string | null;
+  userUuid: string | null;
+  siteUuid: string | null;
   siteName: string | null;
   token: string | null;
   refreshToken: string | null;
@@ -20,8 +20,8 @@ export function useAuth(): AuthState {
   const [state, setState] = useState<AuthState>({
     isAuthenticated: false,
     isLoading: true,
-    userId: null,
-    siteId: null,
+    userUuid: null,
+    siteUuid: null,
     siteName: null,
     token: null,
     refreshToken: null,
@@ -61,16 +61,16 @@ export function useAuth(): AuthState {
     const token = localStorage.getItem('auth_token');
     const refreshTokenVal = localStorage.getItem('refresh_token');
     const tokenExpiresAtStr = localStorage.getItem('token_expires_at');
-    const userId = localStorage.getItem('user_id');
-    const siteId = localStorage.getItem('site_id');
+    const userUuid = localStorage.getItem('user_uuid');
+    const siteUuid = localStorage.getItem('site_uuid');
     const siteName = localStorage.getItem('site_name');
 
     if (!token) {
       setState({
         isAuthenticated: false,
         isLoading: false,
-        userId,
-        siteId,
+        userUuid,
+        siteUuid,
         siteName,
         token: null,
         refreshToken: null,
@@ -82,8 +82,8 @@ export function useAuth(): AuthState {
     setState({
       isAuthenticated: true,
       isLoading: false,
-      userId,
-      siteId,
+      userUuid,
+      siteUuid,
       siteName,
       token,
       refreshToken: refreshTokenVal,

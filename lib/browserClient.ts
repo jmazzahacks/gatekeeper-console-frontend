@@ -84,7 +84,11 @@ export function initAuthClientFromLogin(loginResponse: LoginResponse): void {
   localStorage.setItem('auth_token', loginResponse.auth_token.token);
   localStorage.setItem('refresh_token', loginResponse.refresh_token.token);
   localStorage.setItem('token_expires_at', loginResponse.auth_token.expires_at.toString());
-  localStorage.setItem('user_id', loginResponse.auth_token.user_id.toString());
+  // Post Aegis phase-3 the identifier on the wire is a UUID string, not an int
+  // — no `.toString()` needed. Reading `.user_id` on the v3.0.0 auth_token
+  // shape is `undefined`, and `.toString()` on that used to throw
+  // synchronously right here, leaving the login button stuck on `loading`.
+  localStorage.setItem('user_uuid', loginResponse.auth_token.user_uuid);
 
   const { aegisApiUrl } = getRuntimeConfig();
   authSingleton = new AuthClient({
@@ -143,8 +147,12 @@ export function clearAuthClient(): void {
   localStorage.removeItem('auth_token');
   localStorage.removeItem('refresh_token');
   localStorage.removeItem('token_expires_at');
+  localStorage.removeItem('user_uuid');
+  // Stale keys from the older int-id (`user_id`, `site_id`) and
+  // dynamic-site-lookup (`site_name`) versions of this app. Kept in the
+  // removal list so anyone who logged in during the shim window gets a
+  // clean localStorage on next sign-out.
   localStorage.removeItem('user_id');
-  // Stale keys from the older dynamic-site-lookup version of this app.
   localStorage.removeItem('site_id');
   localStorage.removeItem('site_name');
 }
