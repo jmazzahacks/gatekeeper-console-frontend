@@ -3,25 +3,23 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import type {
-  ClientSummary,
   HttpMethod,
-  PermissionCreatePayload,
   PermissionSummary,
   PermissionUpdatePayload,
   Route,
 } from '@jmazzahacks/api-gatekeeper-api';
 import { GatekeeperApiError } from '@jmazzahacks/api-gatekeeper-api';
+import { Link } from '@/i18n/navigation';
 import DashboardShell from '@/components/DashboardShell';
 import { getGatekeeperClient } from '@/lib/gatekeeperClient';
 
 type LoadState =
   | { status: 'loading' }
-  | { status: 'ok'; permissions: PermissionSummary[]; clients: ClientSummary[]; routes: Route[] }
+  | { status: 'ok'; permissions: PermissionSummary[]; routes: Route[] }
   | { status: 'error'; message: string };
 
 type EditorMode =
   | { kind: 'closed' }
-  | { kind: 'create' }
   | { kind: 'edit'; permission: PermissionSummary };
 
 function errorMessage(err: unknown): string {
@@ -166,169 +164,6 @@ function MethodCheckboxes({
           </span>
         </label>
       ))}
-    </div>
-  );
-}
-
-function CreatePermissionModal({
-  clients,
-  routes,
-  onClose,
-  onSaved,
-}: {
-  clients: ClientSummary[];
-  routes: Route[];
-  onClose: () => void;
-  onSaved: () => void;
-}) {
-  const [clientId, setClientId] = useState<string>(clients[0]?.client_id ?? '');
-  const [routeId, setRouteId] = useState<string>(routes[0]?.route_id ?? '');
-  const [methods, setMethods] = useState<HttpMethod[]>([]);
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const selectedRoute = useMemo(
-    () => routes.find((r) => r.route_id === routeId) ?? null,
-    [routes, routeId],
-  );
-  const availableMethods = useMemo(
-    () => (selectedRoute ? routeMethods(selectedRoute) : []),
-    [selectedRoute],
-  );
-
-  // Drop method selections that aren't valid for the newly-picked route.
-  useEffect(() => {
-    setMethods((prev) => prev.filter((m) => availableMethods.includes(m)));
-  }, [routeId, availableMethods]);
-
-  async function submit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!clientId) {
-      setError('client is required');
-      return;
-    }
-    if (!routeId) {
-      setError('route is required');
-      return;
-    }
-    if (methods.length === 0) {
-      setError('at least one method must be selected');
-      return;
-    }
-    setError(null);
-    setSubmitting(true);
-    try {
-      const payload: PermissionCreatePayload = {
-        client_id: clientId,
-        route_id: routeId,
-        allowed_methods: methods,
-      };
-      await getGatekeeperClient().createPermission(payload);
-      onSaved();
-    } catch (err) {
-      setError(errorMessage(err));
-    } finally {
-      setSubmitting(false);
-    }
-  }
-
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
-      role="dialog"
-      aria-modal="true"
-      onClick={onClose}
-    >
-      <div
-        className="card w-full max-w-2xl max-h-[90vh] overflow-y-auto"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <form onSubmit={submit}>
-          <div className="px-6 pt-6 pb-3 border-b border-[var(--hairline)]">
-            <h2 className="font-display text-base">
-              <span className="caret">new permission</span>
-            </h2>
-          </div>
-
-          <div className="px-6 py-4 space-y-4">
-            <div>
-              <label className="block text-mono-xs text-[var(--ink-dim)] mb-1">client</label>
-              <select
-                className="input-field"
-                value={clientId}
-                onChange={(e) => setClientId(e.target.value)}
-              >
-                {clients.length === 0 ? (
-                  <option value="">no clients configured</option>
-                ) : (
-                  clients.map((c) => (
-                    <option key={c.client_id} value={c.client_id}>
-                      {c.client_name} ({c.api_key_masked})
-                    </option>
-                  ))
-                )}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-mono-xs text-[var(--ink-dim)] mb-1">route</label>
-              <select
-                className="input-field"
-                value={routeId}
-                onChange={(e) => setRouteId(e.target.value)}
-              >
-                {routes.length === 0 ? (
-                  <option value="">no routes configured</option>
-                ) : (
-                  routes.map((r) => (
-                    <option key={r.route_id} value={r.route_id}>
-                      {r.route_pattern} @ {r.domain}
-                    </option>
-                  ))
-                )}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-mono-xs text-[var(--ink-dim)] mb-1">
-                allowed methods
-              </label>
-              <div className="border border-[var(--hairline)] px-3 py-2">
-                <MethodCheckboxes
-                  available={availableMethods}
-                  selected={methods}
-                  onChange={setMethods}
-                />
-              </div>
-              <p className="text-mono-xs text-[var(--ink-faint)] mt-1">
-                only methods configured on the selected route are shown
-              </p>
-            </div>
-
-            {error && (
-              <div className="status-error">
-                <div className="flex items-center gap-2">
-                  <span className="status-dot err" aria-hidden />
-                  <span className="text-mono-xs">{error}</span>
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div className="px-6 pb-6 pt-3 border-t border-[var(--hairline)] flex justify-end gap-3">
-            <button type="button" className="btn-secondary" onClick={onClose} disabled={submitting}>
-              cancel
-            </button>
-            <button
-              type="submit"
-              className="btn-primary"
-              disabled={submitting || clients.length === 0 || routes.length === 0}
-            >
-              {submitting ? 'granting' : 'grant'}
-            </button>
-          </div>
-        </form>
-      </div>
     </div>
   );
 }
@@ -566,12 +401,11 @@ export default function PermissionsPage() {
     setState({ status: 'loading' });
     try {
       const c = getGatekeeperClient();
-      const [permissions, clients, routes] = await Promise.all([
+      const [permissions, routes] = await Promise.all([
         c.listPermissions(),
-        c.listClients(),
         c.listRoutes(),
       ]);
-      setState({ status: 'ok', permissions, clients, routes });
+      setState({ status: 'ok', permissions, routes });
     } catch (err) {
       setState({ status: 'error', message: errorMessage(err) });
     }
@@ -592,14 +426,9 @@ export default function PermissionsPage() {
             <span className="text-mono-xs text-[var(--ink-faint)] whitespace-nowrap">
               {state.status === 'ok' ? `${state.permissions.length} configured` : ''}
             </span>
-            <button
-              type="button"
-              className="btn-primary whitespace-nowrap"
-              onClick={() => setEditor({ kind: 'create' })}
-              disabled={state.status === 'loading'}
-            >
+            <Link href="/dashboard/permissions/new" className="btn-primary whitespace-nowrap">
               + new permission
-            </button>
+            </Link>
           </div>
         </div>
         <div className="hairline my-4" />
@@ -661,18 +490,6 @@ export default function PermissionsPage() {
           </>
         )}
       </div>
-
-      {state.status === 'ok' && editor.kind === 'create' && (
-        <CreatePermissionModal
-          clients={state.clients}
-          routes={state.routes}
-          onClose={() => setEditor({ kind: 'closed' })}
-          onSaved={() => {
-            setEditor({ kind: 'closed' });
-            void reload();
-          }}
-        />
-      )}
 
       {state.status === 'ok' && editor.kind === 'edit' && (
         <EditPermissionModal
