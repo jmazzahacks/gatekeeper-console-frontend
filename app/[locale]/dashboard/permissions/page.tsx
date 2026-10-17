@@ -36,10 +36,12 @@ function routeMethods(route: Route): HttpMethod[] {
 
 function PermissionsTable({
   permissions,
+  domainFilter,
   onEdit,
   onDelete,
 }: {
   permissions: PermissionSummary[];
+  domainFilter: string;
   onEdit: (p: PermissionSummary) => void;
   onDelete: (p: PermissionSummary) => void;
 }) {
@@ -48,10 +50,19 @@ function PermissionsTable({
       <div className="card p-8 text-sm text-center">
         <div className="inline-flex items-center gap-2 text-[var(--ink-dim)]">
           <span className="status-dot dim" aria-hidden />
-          <span className="text-mono-xs">no permissions configured</span>
+          <span className="text-mono-xs">
+            {domainFilter ? 'no permissions for this domain' : 'no permissions configured'}
+          </span>
         </div>
         <p className="text-[var(--ink-faint)] mt-2">
-          Click <span className="text-[var(--amber)]">+ new permission</span> above to add one.
+          {domainFilter ? (
+            <>
+              No permissions match <span className="text-[var(--ink)] break-all">{domainFilter}</span>.
+              {' '}Clear the filter to view all permissions.
+            </>
+          ) : (
+            <>Click <span className="text-[var(--amber)]">+ new permission</span> above to add one.</>
+          )}
         </p>
       </div>
     );
@@ -531,6 +542,25 @@ export default function PermissionsPage() {
   const [state, setState] = useState<LoadState>({ status: 'loading' });
   const [editor, setEditor] = useState<EditorMode>({ kind: 'closed' });
   const [pendingDelete, setPendingDelete] = useState<PermissionSummary | null>(null);
+  const [domainFilter, setDomainFilter] = useState('');
+
+  const domains = useMemo(function availableDomains() {
+    const values = new Set<string>();
+    if (state.status === 'ok') {
+      for (const permission of state.permissions) values.add(permission.route_domain);
+    }
+    // Keep the selected domain available even after its last grant is deleted.
+    if (domainFilter) values.add(domainFilter);
+    return [...values].sort();
+  }, [state, domainFilter]);
+
+  const visiblePermissions = useMemo(function filterPermissions() {
+    if (state.status !== 'ok') return [];
+    if (!domainFilter) return state.permissions;
+    return state.permissions.filter(function matchesDomain(permission) {
+      return permission.route_domain === domainFilter;
+    });
+  }, [state, domainFilter]);
 
   async function reload() {
     setState({ status: 'loading' });
@@ -554,17 +584,17 @@ export default function PermissionsPage() {
   return (
     <DashboardShell crumb="console › permissions">
       <div className="animate-fade-in-up">
-        <div className="flex items-baseline justify-between mb-1">
+        <div className="flex flex-wrap items-baseline justify-between gap-3 mb-1">
           <h1 className="font-display text-lg">
             <span className="caret">permissions</span>
           </h1>
-          <div className="flex items-center gap-4">
-            <span className="text-mono-xs text-[var(--ink-faint)]">
+          <div className="flex flex-wrap items-center gap-4">
+            <span className="text-mono-xs text-[var(--ink-faint)] whitespace-nowrap">
               {state.status === 'ok' ? `${state.permissions.length} configured` : ''}
             </span>
             <button
               type="button"
-              className="btn-primary"
+              className="btn-primary whitespace-nowrap"
               onClick={() => setEditor({ kind: 'create' })}
               disabled={state.status === 'loading'}
             >
@@ -591,11 +621,44 @@ export default function PermissionsPage() {
         )}
 
         {state.status === 'ok' && (
-          <PermissionsTable
-            permissions={state.permissions}
-            onEdit={(p) => setEditor({ kind: 'edit', permission: p })}
-            onDelete={(p) => setPendingDelete(p)}
-          />
+          <>
+            <div className="flex flex-wrap items-end gap-3 mb-4">
+              <div className="w-full sm:w-80 min-w-0">
+                <label htmlFor="permissions-domain" className="block text-mono-xs text-[var(--ink-dim)] mb-1">
+                  domain
+                </label>
+                <select
+                  id="permissions-domain"
+                  className="input-field"
+                  value={domainFilter}
+                  onChange={function changeDomain(event) { setDomainFilter(event.target.value); }}
+                >
+                  <option value="">all domains</option>
+                  {domains.map(function domainOption(domain) {
+                    return <option key={domain} value={domain}>{domain}</option>;
+                  })}
+                </select>
+              </div>
+              {domainFilter && (
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={function clearDomain() { setDomainFilter(''); }}
+                >
+                  clear filter
+                </button>
+              )}
+              <p className="text-mono-xs text-[var(--ink-faint)] py-2" role="status">
+                showing {visiblePermissions.length} of {state.permissions.length} permissions
+              </p>
+            </div>
+            <PermissionsTable
+              permissions={visiblePermissions}
+              domainFilter={domainFilter}
+              onEdit={(p) => setEditor({ kind: 'edit', permission: p })}
+              onDelete={(p) => setPendingDelete(p)}
+            />
+          </>
         )}
       </div>
 

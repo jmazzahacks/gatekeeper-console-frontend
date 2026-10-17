@@ -1,18 +1,27 @@
+# syntax=docker/dockerfile:1
 # =============================================================
 # Stage 1: Dependencies
 # =============================================================
 FROM node:22-alpine AS deps
 WORKDIR /app
 
-ARG CR_PAT
-
 RUN apk add --no-cache git
-
-RUN git config --global url."https://${CR_PAT}@github.com/".insteadOf "https://github.com/"
 
 COPY package.json package-lock.json ./
 
-RUN npm ci
+# Secret-backed git authentication keeps tokens out of image history and URLs.
+RUN --mount=type=secret,id=cr_pat,required=true <<'SH'
+set -eu
+export GIT_CONFIG_COUNT=3
+export GIT_CONFIG_KEY_0=credential.https://github.com.helper
+export GIT_CONFIG_VALUE_0='!f() { printf "username=x-access-token\npassword="; cat /run/secrets/cr_pat; }; f'
+export GIT_CONFIG_KEY_1=url.https://github.com/.insteadOf
+export GIT_CONFIG_VALUE_1=ssh://git@github.com/
+export GIT_CONFIG_KEY_2=url.https://github.com/.insteadOf
+export GIT_CONFIG_VALUE_2=git@github.com:
+export GIT_TERMINAL_PROMPT=0
+npm ci
+SH
 
 # =============================================================
 # Stage 2: Builder
