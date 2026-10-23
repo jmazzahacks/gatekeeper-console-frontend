@@ -2,7 +2,7 @@
 # =============================================================
 # Stage 1: Dependencies
 # =============================================================
-FROM node:22-alpine AS deps
+FROM node:22.23.4-alpine AS deps
 WORKDIR /app
 
 RUN apk add --no-cache git
@@ -26,7 +26,7 @@ SH
 # =============================================================
 # Stage 2: Builder
 # =============================================================
-FROM node:22-alpine AS builder
+FROM node:22.23.4-alpine AS builder
 WORKDIR /app
 
 # No NEXT_PUBLIC_* build args — runtime URLs and branding are fetched from
@@ -42,7 +42,7 @@ RUN npm run build
 # =============================================================
 # Stage 3: Runner
 # =============================================================
-FROM node:22-alpine AS runner
+FROM node:22.23.4-alpine AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
