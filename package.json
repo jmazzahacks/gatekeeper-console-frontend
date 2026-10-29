@@ -16,7 +16,7 @@
     "byteforge-aegis-client-js": "git+https://github.com/jmazzahacks/byteforge-aegis-client-js.git",
     "byteforge-loki-logging-ts": "github:jmazzahacks/byteforge-loki-logging-ts",
     "next": "16.4.1",
-    "next-intl": "4.6.1",
+    "next-intl": "4.14.9",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "sharp": "0.35.5"
@@ -27,7 +27,7 @@
     "autoprefixer": "10.4.22",
     "eslint": "9.39.1",
     "eslint-config-next": "16.4.1",
-    "postcss": "8.5.6",
+    "postcss": "8.5.32",
     "tailwindcss": "4.1.17",
     "typescript": "5.9.3"
   }
